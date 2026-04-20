@@ -97,7 +97,7 @@ tr.ptot td{background:#eff6ff;border-top:2px solid #bae6fd}tr.ptot td.lc{positio
 #ld{position:fixed;inset:0;background:#fff;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:12px}
 .spin{width:38px;height:38px;border:4px solid #e2e8f0;border-top-color:var(--blue);border-radius:50%;animation:sp .75s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
 </style></head><body>
-<div id="ld" style="position:fixed;inset:0;background:#0f172a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999"><div style="color:#38bdf8;font-size:28px;margin-bottom:12px">&#9696;</div><div id="ld-msg" style="color:#94a3b8;font-family:Sarabun,sans-serif;font-size:14px">กำลังโหลด...</div><div class="spin"></div><span style="font-size:13px;color:#94a3b8;font-family:Sarabun,sans-serif">กำลังโหลดข้อมูล…</span></div>
+<div id="ld"><div class="spin"></div><span id="ld-msg" style="font-size:13px;color:#94a3b8;font-family:Sarabun,sans-serif">กำลังโหลดข้อมูล…</span></div>
 <div id="app">
 <div id="sb"><div class="sb-hd"><div class="sb-hd-ico">&#128202;</div><h2>MT Sales Dashboard</h2><p>Modern Trade Analytics</p><div class="sb-badge">2024 &#8211; 2026</div></div>
 <div class="sb-nav"><div class="sb-lbl">Navigation</div>
@@ -175,12 +175,30 @@ tr.ptot td{background:#eff6ff;border-top:2px solid #bae6fd}tr.ptot td.lc{positio
 <div class="dr-ft"><div class="dr-info">ช่วง: <b id="dr-info-txt"></b></div><div class="dr-acts"><button class="dr-rst" onclick="drReset()">Reset</button><button class="dr-ok" onclick="drApply()">ตกลง</button></div></div>
 </div></div>
 <script>
+var D=[],tType="line",tMet="s",ovTab="it",ovSort={c:1,d:"desc"};
+var yS="yr",yMet="s",yyTab="it",yySort={c:2,d:"desc"};
+var yqTab="it",yqSort={c:2,d:"desc"},selQ=1;
+var ymTab="it",ymSort={c:2,d:"desc"},selM=1;
+var catMet="s",cTrend,cDonut,cYly;
+var catOpen=new Set(),brOpen=new Set(),_catList=[],_brMap={};
+var drFrom=null,drTo=null,_drAllYMs=[],_drCtx="ov",_drTF=null,_drTT=null;
+var NF=new Intl.NumberFormat("th-TH",{maximumFractionDigits:0});
+var fmt=function(v){return v==null?"-":NF.format(v);};
+var fmtM=function(v){if(!v)return"0";var a=Math.abs(v);if(a>=1e6)return(v/1e6).toFixed(2)+"M";if(a>=1e3)return(v/1e3).toFixed(1)+"K";return v.toFixed(0);};
+var pct=function(a,b){return b?((a-b)/b*100):null;};
+var pctH=function(v){if(v==null)return '<span class="pz">N/A</span>';var cl=v>0?"pp":v<0?"pn":"pz";return '<span class="'+cl+'">'+( v>0?"\u25B2":"\u25BC")+Math.abs(v).toFixed(1)+"%</span>";};
+var esc=function(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");};
+var MTH=["","\u0E21.\u0E04.","\u0E01.\u0E1E.","\u0E21\u0E35.\u0E04.","\u0E40\u0E21.\u0E22.","\u0E1E.\u0E04.","\u0E21\u0E34.\u0E22.","\u0E01.\u0E04.","\u0E2A.\u0E04.","\u0E01.\u0E22.","\u0E15.\u0E04.","\u0E1E.\u0E22.","\u0E18.\u0E04."];
+var thYM=function(ym){var p=ym.split("-");return MTH[+p[1]]+" "+p[0];};
+var V=function(id){var el=document.getElementById(id);return el?el.value:"";};
+var rS=function(m){return Array.from(m.values()).reduce(function(a,v){return a+v;},0);};
+var mV=function(m,ym){return m.get(ym)||0;};
 // ===== SUPABASE CONFIG =====
 var SUPABASE_URL = 'https://cfutfbcllxmeewqromwr.supabase.co';
 var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmdXRmYmNsbHhtZWV3cXJvbXdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NjYxODIsImV4cCI6MjA5MTM0MjE4Mn0.GaYRYK7LgrETqlnmpt8R0e4ZqWOV6qG2dcWpculo-k8';
 var TABLE_NAME = 'MT Sale dashboard';
 // ===========================
- 
+
 function parseNum(v){if(!v||v==='')return 0;return parseFloat(String(v).replace(/,/g,''))||0;}
 function parseBillingDate(d){
   if(!d)return{y:0,m:0,q:0,ym:'0000-00'};
@@ -191,7 +209,7 @@ function parseBillingDate(d){
   return{y:0,m:0,q:0,ym:'0000-00'};
 }
 function buildDate(y,m){return{y:y,m:m,q:Math.ceil(m/3),ym:y+'-'+String(m).padStart(2,'0')};}
- 
+
 async function loadData(){
   var allRows=[],from=0,pageSize=1000;
   var encodedTable=encodeURIComponent(TABLE_NAME);
@@ -220,30 +238,6 @@ async function loadData(){
       y:dt.y,m:dt.m,q:dt.q,ym:dt.ym
     };
   }).filter(function(r){return r.y>0;});
-}
- 
-var D=[],tType="line",tMet="s",ovTab="it",ovSort={c:1,d:"desc"};
-var yS="yr",yMet="s",yyTab="it",yySort={c:2,d:"desc"};
-var yqTab="it",yqSort={c:2,d:"desc"},selQ=1;
-var ymTab="it",ymSort={c:2,d:"desc"},selM=1;
-var catMet="s",cTrend,cDonut,cYly;
-var catOpen=new Set(),brOpen=new Set(),_catList=[],_brMap={};
-var drFrom=null,drTo=null,_drAllYMs=[],_drCtx="ov",_drTF=null,_drTT=null;
-var NF=new Intl.NumberFormat("th-TH",{maximumFractionDigits:0});
-var fmt=function(v){return v==null?"-":NF.format(v);};
-var fmtM=function(v){if(!v)return"0";var a=Math.abs(v);if(a>=1e6)return(v/1e6).toFixed(2)+"M";if(a>=1e3)return(v/1e3).toFixed(1)+"K";return v.toFixed(0);};
-var pct=function(a,b){return b?((a-b)/b*100):null;};
-var pctH=function(v){if(v==null)return '<span class="pz">N/A</span>';var cl=v>0?"pp":v<0?"pn":"pz";return '<span class="'+cl+'">'+( v>0?"\u25B2":"\u25BC")+Math.abs(v).toFixed(1)+"%</span>";};
-var esc=function(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");};
-var MTH=["","\u0E21.\u0E04.","\u0E01.\u0E1E.","\u0E21\u0E35.\u0E04.","\u0E40\u0E21.\u0E22.","\u0E1E.\u0E04.","\u0E21\u0E34.\u0E22.","\u0E01.\u0E04.","\u0E2A.\u0E04.","\u0E01.\u0E22.","\u0E15.\u0E04.","\u0E1E.\u0E22.","\u0E18.\u0E04."];
-var thYM=function(ym){var p=ym.split("-");return MTH[+p[1]]+" "+p[0];};
-var V=function(id){var el=document.getElementById(id);return el?el.value:"";};
-var rS=function(m){return Array.from(m.values()).reduce(function(a,v){return a+v;},0);};
-var mV=function(m,ym){return m.get(ym)||0;};
-function loadData(){
-  var bin=Uint8Array.from(atob(_B64),function(c){return c.charCodeAt(0);});
-  var obj=JSON.parse(pako.inflate(bin,{to:"string"}));
-  D=obj.r.map(function(r){return{s:r[0],b:r[1],c:r[2],br:r[3],it:r[4],cat:r[5],y:r[6],m:r[7],q:r[8],ym:r[9]};});
 }
 function populateSels(){
   var cu=[...new Set(D.map(function(r){return r.c;}))].sort();
@@ -498,7 +492,6 @@ function nav(page){
 }
 async function init(){
   var ld=document.getElementById('ld');
-  if(ld)ld.style.display='flex';
   await loadData();
   populateSels();drInit();renderOv();
   if(ld)ld.style.display='none';
