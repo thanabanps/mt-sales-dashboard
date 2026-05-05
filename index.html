@@ -230,7 +230,7 @@ async function loadData(){
     var dt=parseBillingDate(r['Billing Date']);
     return{
       s:parseNum(r['Net Val(After Disc) THB']),
-      b:parseNum(r['ToBOX']),
+      b:Math.round(parseNum(r['ToBOX'])),
       c:r['ToNAME']||'',
       br:r['Brand']||'',
       it:r['Item Description']||'',
