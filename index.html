@@ -175,7 +175,7 @@ tr.ptot td{background:#eff6ff;border-top:2px solid #bae6fd}tr.ptot td.lc{positio
 <div class="dr-ft"><div class="dr-info">ช่วง: <b id="dr-info-txt"></b></div><div class="dr-acts"><button class="dr-rst" onclick="drReset()">Reset</button><button class="dr-ok" onclick="drApply()">ตกลง</button></div></div>
 </div></div>
 <script>
-var D=[],tType="line",tMet="s",ovTab="it",ovSort={c:1,d:"desc"};
+var D=[],tType="line",tMet="s",ovTab="it",ovSort={c:2,d:"desc"};
 var yS="yr",yMet="s",yyTab="it",yySort={c:2,d:"desc"};
 var yqTab="it",yqSort={c:2,d:"desc"},selQ=1;
 var ymTab="it",ymSort={c:2,d:"desc"},selM=1;
@@ -195,7 +195,7 @@ var rS=function(m){return Array.from(m.values()).reduce(function(a,v){return a+v
 var mV=function(m,ym){return m.get(ym)||0;};
 // ===== SUPABASE CONFIG =====
 var SUPABASE_URL = 'https://cfutfbcllxmeewqromwr.supabase.co';
-var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmdXRmYmNsbHhtZWV3cXJvbXdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NjYxODIsImV4cCI6MjA5MTM0MjE4Mn0.GaYRYK7LgrETqlnmpt8R0e4ZqWOV6qG2dcWpculo-k8';
+var SUPABASE_KEY = 'YOUR_ANON_KEY_HERE';
 var TABLE_NAME = 'MT Sale dashboard';
 // ===========================
 
@@ -237,7 +237,7 @@ async function loadData(){
       cat:r['Mat.Acct.Assgn.']||'',
       y:dt.y,m:dt.m,q:dt.q,ym:dt.ym
     };
-  }).filter(function(r){return r.y>0;});
+  }).filter(function(r){return r.y>0&&r.s!==0;});
 }
 function populateSels(){
   var cu=[...new Set(D.map(function(r){return r.c;}))].sort();
